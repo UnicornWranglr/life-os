@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { and, eq, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { weeklyReviews } from '../db/schema';
@@ -8,7 +8,7 @@ const router = Router();
 router.use(authenticate);
 
 // GET /api/reviews
-router.get('/', async (req: AuthRequest, res, next) => {
+router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const result = await db
       .select()
@@ -22,7 +22,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
 });
 
 // GET /api/reviews/:weekStart  — e.g. /reviews/2026-03-30
-router.get('/:weekStart', async (req: AuthRequest, res, next) => {
+router.get('/:weekStart', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const [row] = await db
       .select()
@@ -38,7 +38,7 @@ router.get('/:weekStart', async (req: AuthRequest, res, next) => {
 });
 
 // POST /api/reviews
-router.post('/', async (req: AuthRequest, res, next) => {
+router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { weekStart, wins, blockers, focusAreaNextWeek, notes } = req.body;
     if (!weekStart) {
@@ -71,7 +71,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
 });
 
 // PUT /api/reviews/:weekStart
-router.put('/:weekStart', async (req: AuthRequest, res, next) => {
+router.put('/:weekStart', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { wins, blockers, focusAreaNextWeek, notes } = req.body;
 
