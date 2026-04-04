@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { db } from '../db';
 import { sessions, areas, habits, habitLogs, dailyLogs } from '../db/schema';
@@ -9,7 +9,7 @@ router.use(authenticate);
 
 // GET /api/insights/focus?from=&to=
 // Returns per-area session counts and durations as percentages.
-router.get('/focus', async (req: AuthRequest, res, next) => {
+router.get('/focus', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { from, to } = req.query;
 
@@ -45,7 +45,7 @@ router.get('/focus', async (req: AuthRequest, res, next) => {
 
 // GET /api/insights/habits?from=&to=
 // Returns per-habit completion rates and weekly breakdown.
-router.get('/habits', async (req: AuthRequest, res, next) => {
+router.get('/habits', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { from, to } = req.query;
     const fromStr = (from as string) ?? '';
@@ -121,7 +121,7 @@ router.get('/habits', async (req: AuthRequest, res, next) => {
 
 // GET /api/insights/routines?from=&to=
 // Returns cooking/work-block rates and weekly dot patterns.
-router.get('/routines', async (req: AuthRequest, res, next) => {
+router.get('/routines', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { from, to } = req.query;
 

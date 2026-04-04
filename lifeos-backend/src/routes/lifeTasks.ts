@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { and, eq, gte, lte } from 'drizzle-orm';
 import { db } from '../db';
 import { lifeTasks, lifeTaskLogs } from '../db/schema';
@@ -17,7 +17,7 @@ router.use(authenticate);
 
 // GET /api/life-tasks/today
 // Runs the schedule engine and returns { due, weekly, completed }
-router.get('/today', async (req: AuthRequest, res, next) => {
+router.get('/today', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const today = todayString();
     const now = new Date();
@@ -69,7 +69,7 @@ router.get('/today', async (req: AuthRequest, res, next) => {
 });
 
 // GET /api/life-tasks/logs?from=&to=
-router.get('/logs', async (req: AuthRequest, res, next) => {
+router.get('/logs', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { from, to } = req.query;
 
@@ -85,7 +85,7 @@ router.get('/logs', async (req: AuthRequest, res, next) => {
 });
 
 // POST /api/life-tasks/logs  — tick off a task (recurring or one-off)
-router.post('/logs', async (req: AuthRequest, res, next) => {
+router.post('/logs', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { taskId, logDate, note, isOneoff } = req.body;
     if (!logDate) {
@@ -116,7 +116,7 @@ router.post('/logs', async (req: AuthRequest, res, next) => {
 });
 
 // DELETE /api/life-tasks/logs/:id  — undo a tick
-router.delete('/logs/:id', async (req: AuthRequest, res, next) => {
+router.delete('/logs/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const [deleted] = await db
       .delete(lifeTaskLogs)
@@ -139,7 +139,7 @@ router.delete('/logs/:id', async (req: AuthRequest, res, next) => {
 // ── Task definition routes ────────────────────────────────────────────────
 
 // GET /api/life-tasks
-router.get('/', async (req: AuthRequest, res, next) => {
+router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const result = await db
       .select()
@@ -152,7 +152,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
 });
 
 // POST /api/life-tasks
-router.post('/', async (req: AuthRequest, res, next) => {
+router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { name, category, scheduleType, scheduleConfig, scope } = req.body;
     if (!name || !scheduleType || scheduleConfig === undefined) {
@@ -172,7 +172,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
 });
 
 // PUT /api/life-tasks/:id
-router.put('/:id', async (req: AuthRequest, res, next) => {
+router.put('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { name, category, scheduleType, scheduleConfig, scope } = req.body;
 
@@ -193,7 +193,7 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
 });
 
 // PATCH /api/life-tasks/:id/active
-router.patch('/:id/active', async (req: AuthRequest, res, next) => {
+router.patch('/:id/active', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { active } = req.body;
     if (typeof active !== 'boolean') {
@@ -218,7 +218,7 @@ router.patch('/:id/active', async (req: AuthRequest, res, next) => {
 });
 
 // DELETE /api/life-tasks/:id
-router.delete('/:id', async (req: AuthRequest, res, next) => {
+router.delete('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const [deleted] = await db
       .delete(lifeTasks)

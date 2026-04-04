@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { areas } from '../db/schema';
@@ -8,7 +8,7 @@ const router = Router();
 router.use(authenticate);
 
 // GET /api/areas
-router.get('/', async (req: AuthRequest, res, next) => {
+router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const result = await db.select().from(areas).where(eq(areas.userId, req.userId!));
     res.json(result);
@@ -18,7 +18,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
 });
 
 // POST /api/areas
-router.post('/', async (req: AuthRequest, res, next) => {
+router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { name, type, focusBudgetPct, color, weekdaysOnly } = req.body;
     if (!name || !type || !color) {
@@ -38,7 +38,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
 });
 
 // PUT /api/areas/:id
-router.put('/:id', async (req: AuthRequest, res, next) => {
+router.put('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { name, type, focusBudgetPct, color, weekdaysOnly } = req.body;
 
@@ -59,7 +59,7 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
 });
 
 // PATCH /api/areas/:id/status
-router.patch('/:id/status', async (req: AuthRequest, res, next) => {
+router.patch('/:id/status', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { status } = req.body;
     if (!status) {

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { dailyLogs } from '../db/schema';
@@ -8,7 +8,7 @@ const router = Router();
 router.use(authenticate);
 
 // GET /api/daily-logs/:date  — returns the log for a specific date (or null)
-router.get('/:date', async (req: AuthRequest, res, next) => {
+router.get('/:date', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const [row] = await db
       .select()
@@ -25,7 +25,7 @@ router.get('/:date', async (req: AuthRequest, res, next) => {
 });
 
 // POST /api/daily-logs
-router.post('/', async (req: AuthRequest, res, next) => {
+router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { logDate, wakeTime, sleepTarget, cookedDinner, workBlockDone, tomorrowOneThing } = req.body;
     if (!logDate) {
@@ -56,7 +56,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
 });
 
 // PUT /api/daily-logs/:date  — update (or upsert) a log for a given date
-router.put('/:date', async (req: AuthRequest, res, next) => {
+router.put('/:date', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { wakeTime, sleepTarget, cookedDinner, workBlockDone, tomorrowOneThing } = req.body;
     const logDate = req.params.date;

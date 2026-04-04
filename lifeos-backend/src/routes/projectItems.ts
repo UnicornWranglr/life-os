@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { and, eq, count } from 'drizzle-orm';
 import { db } from '../db';
 import { projectItems } from '../db/schema';
@@ -8,7 +8,7 @@ const router = Router();
 router.use(authenticate);
 
 // GET /api/project-items?areaId=
-router.get('/', async (req: AuthRequest, res, next) => {
+router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { areaId } = req.query;
 
@@ -27,7 +27,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
 });
 
 // POST /api/project-items
-router.post('/', async (req: AuthRequest, res, next) => {
+router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { areaId, title, type, notes, status } = req.body;
     if (!areaId || !title) {
@@ -67,7 +67,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
 });
 
 // PUT /api/project-items/:id
-router.put('/:id', async (req: AuthRequest, res, next) => {
+router.put('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { title, status, type, notes } = req.body;
 
@@ -122,7 +122,7 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
 });
 
 // DELETE /api/project-items/:id
-router.delete('/:id', async (req: AuthRequest, res, next) => {
+router.delete('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const [deleted] = await db
       .delete(projectItems)

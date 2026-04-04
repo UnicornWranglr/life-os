@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 import { vision } from '../db/schema';
@@ -8,7 +8,7 @@ const router = Router();
 router.use(authenticate);
 
 // GET /api/vision
-router.get('/', async (req: AuthRequest, res, next) => {
+router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const [row] = await db.select().from(vision).where(eq(vision.userId, req.userId!));
     res.json(row ?? null);
@@ -18,7 +18,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
 });
 
 // PUT /api/vision  — upsert (create on first call, update thereafter)
-router.put('/', async (req: AuthRequest, res, next) => {
+router.put('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { statement } = req.body;
     if (!statement) {

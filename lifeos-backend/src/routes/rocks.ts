@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { quarterlyRocks } from '../db/schema';
@@ -8,7 +8,7 @@ const router = Router();
 router.use(authenticate);
 
 // GET /api/rocks?quarter=2026-Q2
-router.get('/', async (req: AuthRequest, res, next) => {
+router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { quarter } = req.query;
 
@@ -23,7 +23,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
 });
 
 // POST /api/rocks
-router.post('/', async (req: AuthRequest, res, next) => {
+router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { areaId, quarter, title } = req.body;
     if (!areaId || !quarter || !title) {
@@ -43,7 +43,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
 });
 
 // PUT /api/rocks/:id
-router.put('/:id', async (req: AuthRequest, res, next) => {
+router.put('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { title, status, notes } = req.body;
 
@@ -64,7 +64,7 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
 });
 
 // DELETE /api/rocks/:id
-router.delete('/:id', async (req: AuthRequest, res, next) => {
+router.delete('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const [deleted] = await db
       .delete(quarterlyRocks)

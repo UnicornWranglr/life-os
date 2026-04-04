@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { and, eq, gte, lte, desc } from 'drizzle-orm';
 import { db } from '../db';
 import { sessions } from '../db/schema';
@@ -10,7 +10,7 @@ router.use(authenticate);
 
 // GET /api/sessions/recent  — last 14 days, all areas
 // Must be declared before /:id to avoid "recent" matching as an id param.
-router.get('/recent', async (req: AuthRequest, res, next) => {
+router.get('/recent', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const today = todayString();
     const twoWeeksAgo = new Date();
@@ -34,7 +34,7 @@ router.get('/recent', async (req: AuthRequest, res, next) => {
 });
 
 // GET /api/sessions?areaId=&from=&to=
-router.get('/', async (req: AuthRequest, res, next) => {
+router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { areaId, from, to } = req.query;
 
@@ -56,7 +56,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
 });
 
 // POST /api/sessions
-router.post('/', async (req: AuthRequest, res, next) => {
+router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const {
       areaId, sessionDate, plannedOutcome, actualOutcome,
@@ -83,7 +83,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
 });
 
 // PUT /api/sessions/:id
-router.put('/:id', async (req: AuthRequest, res, next) => {
+router.put('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const {
       areaId, sessionDate, plannedOutcome, actualOutcome,
@@ -107,7 +107,7 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
 });
 
 // DELETE /api/sessions/:id
-router.delete('/:id', async (req: AuthRequest, res, next) => {
+router.delete('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const [deleted] = await db
       .delete(sessions)

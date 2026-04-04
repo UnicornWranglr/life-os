@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { and, eq, gte, lte } from 'drizzle-orm';
 import { db } from '../db';
 import { habits, habitLogs } from '../db/schema';
@@ -10,7 +10,7 @@ router.use(authenticate);
 // ── Habit log sub-routes (/logs/*) must come before /:id ─────────────────
 
 // GET /api/habits/logs?from=&to=
-router.get('/logs', async (req: AuthRequest, res, next) => {
+router.get('/logs', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { from, to } = req.query;
 
@@ -26,7 +26,7 @@ router.get('/logs', async (req: AuthRequest, res, next) => {
 });
 
 // POST /api/habits/logs  — upsert: one log per habit per day
-router.post('/logs', async (req: AuthRequest, res, next) => {
+router.post('/logs', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { habitId, logDate, completed } = req.body;
     if (!habitId || !logDate) {
@@ -63,7 +63,7 @@ router.post('/logs', async (req: AuthRequest, res, next) => {
 });
 
 // PUT /api/habits/logs/:id
-router.put('/logs/:id', async (req: AuthRequest, res, next) => {
+router.put('/logs/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { completed } = req.body;
 
@@ -86,7 +86,7 @@ router.put('/logs/:id', async (req: AuthRequest, res, next) => {
 // ── Habit definition routes ───────────────────────────────────────────────
 
 // GET /api/habits
-router.get('/', async (req: AuthRequest, res, next) => {
+router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const result = await db.select().from(habits).where(eq(habits.userId, req.userId!));
     res.json(result);
@@ -96,7 +96,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
 });
 
 // POST /api/habits
-router.post('/', async (req: AuthRequest, res, next) => {
+router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { name, areaId } = req.body;
     if (!name) {
@@ -116,7 +116,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
 });
 
 // PUT /api/habits/:id
-router.put('/:id', async (req: AuthRequest, res, next) => {
+router.put('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { name, areaId, active } = req.body;
 

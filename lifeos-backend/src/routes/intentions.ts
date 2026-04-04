@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { and, eq } from 'drizzle-orm';
 import { db } from '../db';
 import { monthlyIntentions } from '../db/schema';
@@ -8,7 +8,7 @@ const router = Router();
 router.use(authenticate);
 
 // GET /api/intentions?month=2026-04
-router.get('/', async (req: AuthRequest, res, next) => {
+router.get('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { month } = req.query;
 
@@ -23,7 +23,7 @@ router.get('/', async (req: AuthRequest, res, next) => {
 });
 
 // POST /api/intentions
-router.post('/', async (req: AuthRequest, res, next) => {
+router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { areaId, month, title } = req.body;
     if (!areaId || !month || !title) {
@@ -43,7 +43,7 @@ router.post('/', async (req: AuthRequest, res, next) => {
 });
 
 // PUT /api/intentions/:id
-router.put('/:id', async (req: AuthRequest, res, next) => {
+router.put('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { title, status } = req.body;
 
@@ -67,7 +67,7 @@ router.put('/:id', async (req: AuthRequest, res, next) => {
 });
 
 // DELETE /api/intentions/:id
-router.delete('/:id', async (req: AuthRequest, res, next) => {
+router.delete('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const [deleted] = await db
       .delete(monthlyIntentions)

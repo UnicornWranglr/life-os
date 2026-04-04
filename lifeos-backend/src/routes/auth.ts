@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { eq } from 'drizzle-orm';
@@ -70,7 +70,7 @@ router.post('/refresh', async (req, res, next) => {
 });
 
 // GET /api/auth/me
-router.get('/me', authenticate, async (req: AuthRequest, res, next) => {
+router.get('/me', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const [user] = await db
       .select({ id: users.id, email: users.email, createdAt: users.createdAt })
