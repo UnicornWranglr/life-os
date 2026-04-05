@@ -37,6 +37,8 @@ export const taskScopeEnum = pgEnum('task_scope', [
   'daily', 'weekly', 'oneoff',
 ]);
 
+export const chatRoleEnum = pgEnum('chat_role', ['user', 'assistant']);
+
 export const scheduleTypeEnum = pgEnum('schedule_type', [
   'daily',
   'days_of_week',
@@ -178,4 +180,12 @@ export const lifeTaskLogs = pgTable('life_task_logs', {
   note:        text('note'),
   completedAt: timestamp('completed_at').notNull(),
   isOneoff:    boolean('is_oneoff').default(false).notNull(),
+});
+
+export const chatMemories = pgTable('chat_memories', {
+  id:        uuid('id').primaryKey().defaultRandom(),
+  userId:    uuid('user_id').notNull().references(() => users.id),
+  role:      chatRoleEnum('role').notNull(),
+  content:   text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });

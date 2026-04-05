@@ -1,12 +1,14 @@
 import { Router, Response, NextFunction } from 'express';
-import { and, eq } from 'drizzle-orm';
+import { and, asc, eq, sql } from 'drizzle-orm';
 import Anthropic from '@anthropic-ai/sdk';
 import { db } from '../db';
 import {
   dailyLogs, areas, quarterlyRocks, monthlyIntentions, habits, habitLogs,
-  sessions, projectItems,
+  sessions, projectItems, chatMemories,
 } from '../db/schema';
 import { authenticate, AuthRequest } from '../middleware/auth';
+
+const MEMORY_LIMIT = 20;
 
 const router = Router();
 router.use(authenticate);
@@ -32,7 +34,7 @@ router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => 
     const year   = today.slice(0, 4);
     const quarter = `${year}-Q${Math.ceil((new Date().getMonth() + 1) / 3)}`;
 
-    // ── Fetch context in parallel ──────────────────────────────────────────
+    // ── Fetch context + memory in parallel ────────────────────────────────
     const [
       [todayLog],
       activeAreas,
@@ -40,6 +42,7 @@ router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => 
       currentIntentions,
       todayHabitLogs,
       activeHabits,
+      persistedHistory,
     ] = await Promise.all([
       db.select().from(dailyLogs)
         .where(and(eq(dailyLogs.userId, userId), eq(dailyLogs.logDate, today))),
@@ -58,6 +61,13 @@ router.post('/', async (req: AuthRequest, res: Response, next: NextFunction) => 
 
       db.select().from(habits)
         .where(and(eq(habits.userId, userId), eq(habits.active, true))),
+
+      // Last MEMORY_LIMIT messages across all past sessions, oldest first
+      db.select({ role: chatMemories.role, content: chatMemories.content })
+        .from(chatMemories)
+        .where(eq(chatMemories.userId, userId))
+        .orderBy(asc(chatMemories.createdAt))
+        .limit(MEMORY_LIMIT),
     ]);
 
     // Join today's habit logs with habit names
@@ -188,8 +198,19 @@ Use when the user describes a significant goal they want to commit to this quart
 Keep your reply focused, warm, and under 200 words unless more detail is genuinely needed.`;
 
     // ── Call Claude ────────────────────────────────────────────────────────
+    // DB memory is the source of truth for history. The frontend's
+    // conversationHistory covers the current in-flight session (messages
+    // exchanged since the page loaded that haven't been persisted yet).
+    // We merge: persisted past + current session + new message, deduplicating
+    // by only taking current-session messages that aren't already in persisted.
+    const persistedContents = new Set(persistedHistory.map(m => m.content));
+    const dedupedSession = (conversationHistory ?? []).filter(
+      m => !persistedContents.has(m.content),
+    );
+
     const messages: Anthropic.MessageParam[] = [
-      ...(conversationHistory ?? []),
+      ...persistedHistory,
+      ...dedupedSession,
       { role: 'user', content: message },
     ];
 
@@ -348,6 +369,29 @@ Keep your reply focused, warm, and under 200 words unless more detail is genuine
     }
 
     res.json({ reply, action, updatedData });
+
+    // ── Persist conversation turn + trim to MEMORY_LIMIT ──────────────────
+    // Run after responding so it never delays the client.
+    // Two inserts (user message + assistant reply), then prune oldest rows
+    // beyond the limit. Fire-and-forget — errors are logged, not surfaced.
+    db.insert(chatMemories)
+      .values([
+        { userId, role: 'user',      content: message },
+        { userId, role: 'assistant', content: reply   },
+      ])
+      .then(() =>
+        db.execute(sql`
+          DELETE FROM chat_memories
+          WHERE user_id = ${userId}
+            AND id NOT IN (
+              SELECT id FROM chat_memories
+              WHERE user_id = ${userId}
+              ORDER BY created_at DESC
+              LIMIT ${MEMORY_LIMIT}
+            )
+        `),
+      )
+      .catch(err => console.error('chat_memories persist error:', err));
   } catch (err) {
     next(err);
   }
