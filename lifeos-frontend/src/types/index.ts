@@ -158,6 +158,7 @@ export interface FocusInsight {
     areaId: string;
     name: string;
     color: string;
+    focusBudgetPct: number;
     sessionCount: number;
     durationMins: number;
     pct: number;

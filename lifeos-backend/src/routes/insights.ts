@@ -19,16 +19,17 @@ router.get('/focus', async (req: AuthRequest, res: Response, next: NextFunction)
 
     const rows = await db
       .select({
-        areaId:       areas.id,
-        name:         areas.name,
-        color:        areas.color,
-        sessionCount: sql<number>`count(${sessions.id})::int`,
-        durationMins: sql<number>`coalesce(sum(${sessions.durationMins}), 0)::int`,
+        areaId:         areas.id,
+        name:           areas.name,
+        color:          areas.color,
+        focusBudgetPct: areas.focusBudgetPct,
+        sessionCount:   sql<number>`count(${sessions.id})::int`,
+        durationMins:   sql<number>`coalesce(sum(${sessions.durationMins}), 0)::int`,
       })
       .from(sessions)
       .innerJoin(areas, eq(sessions.areaId, areas.id))
       .where(and(...conditions))
-      .groupBy(areas.id, areas.name, areas.color);
+      .groupBy(areas.id, areas.name, areas.color, areas.focusBudgetPct);
 
     const totalSessions = rows.reduce((acc, r) => acc + r.sessionCount, 0);
 
