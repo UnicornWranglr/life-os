@@ -24,11 +24,14 @@ export function DayHeader() {
       <p className="text-sm text-muted mb-5">{dateLabel()}</p>
 
       {vision?.statement && (
-        <div className="inline-flex items-center gap-2 bg-accent/10 border border-accent/20
-                        text-accent-light text-xs font-medium px-3 py-1.5 rounded-full max-w-full">
-          <span className="flex-shrink-0">◎</span>
-          <span className="truncate">{vision.statement}</span>
-        </div>
+        <>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted mb-2">North Star</p>
+          <div className="inline-flex items-center gap-2 bg-accent/10 border border-accent/20
+                          text-accent-light text-xs font-medium px-3 py-1.5 rounded-full max-w-full">
+            <span className="flex-shrink-0">◎</span>
+            <span className="truncate">{vision.statement}</span>
+          </div>
+        </>
       )}
     </div>
   );
