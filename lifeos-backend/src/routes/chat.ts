@@ -224,17 +224,18 @@ Keep your reply focused, warm, and under 200 words unless more detail is genuine
     const rawContent = aiResponse.content[0].type === 'text' ? aiResponse.content[0].text : '';
 
     // Parse the JSON response from the AI
-    let reply  = rawContent;
+    let reply  = '';
     let action: { type: string; payload: Record<string, unknown> } | null = null;
 
     try {
       // Strip markdown code fences if present
       const jsonStr = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
       const parsed  = JSON.parse(jsonStr);
-      reply  = parsed.reply  ?? rawContent;
+      reply  = typeof parsed.reply === 'string' ? parsed.reply : '';
       action = parsed.action ?? null;
     } catch {
-      // AI didn't return valid JSON — use raw text as reply, no action
+      // AI didn't return valid JSON — surface raw text as a plain reply
+      reply = rawContent;
     }
 
     // ── Sanitise reply — strip any JSON artifacts the AI leaked ───────────
