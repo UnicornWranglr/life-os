@@ -74,7 +74,7 @@ Current quarter: ${quarter}
 Current month: ${month}
 
 ## Active Areas
-${activeAreas.length ? activeAreas.map(a => `- ${a.name} (${a.type}, ${a.focusBudgetPct}% budget)`).join('\n') : 'None'}
+${activeAreas.length ? activeAreas.map(a => `- id: '${a.id}'  name: '${a.name}'  (${a.type}, ${a.focusBudgetPct}% budget)`).join('\n') : 'None'}
 
 ## Quarterly Rocks (${quarter})
 ${currentRocks.length ? currentRocks.map(r => {
@@ -127,7 +127,7 @@ Use when the user describes a significant goal they want to commit to this quart
 ## Action selection rules
 - Use an action whenever the user's message naturally calls for it — don't wait to be explicitly asked.
 - Only emit ONE action per response. If multiple things could be logged, pick the most important one and mention the others in your reply.
-- Always resolve area names to their UUID from the active areas list. If the area is ambiguous, pick the best match and note it in your reply.
+- **areaId MUST be the exact UUID string from the 'id' field in the Active Areas list above.** Never use an area name, slug, or any other string as the areaId. For example: if the list shows  id: '4f87b888-306e-4792-b696-350e1df388a8'  name: 'Life OS'  then areaId must be '4f87b888-306e-4792-b696-350e1df388a8' — not 'life-os', not 'Life OS', not any other value. If you cannot find an exact UUID match, set action to null and ask the user to clarify.
 - Set action to null for purely conversational messages, questions, or advice.
 Keep your reply focused, warm, and under 200 words unless more detail is genuinely needed.`;
 
@@ -162,6 +162,22 @@ Keep your reply focused, warm, and under 200 words unless more detail is genuine
 
     // ── Execute action ─────────────────────────────────────────────────────
     let updatedData: Record<string, unknown> | null = null;
+
+    // Guard: actions that write to a specific area must use a valid UUID that
+    // belongs to this user. Catches hallucinated slugs / names from the AI.
+    const areaRequiringActions = ['LOG_SESSION', 'CREATE_PROJECT_ITEM', 'CREATE_ROCK'];
+    if (action && areaRequiringActions.includes(action.type)) {
+      const areaId = action.payload?.areaId as string | undefined;
+      const validIds = new Set(activeAreas.map(a => a.id));
+      if (!areaId || !validIds.has(areaId)) {
+        res.json({
+          reply: `I wasn't able to match that to one of your areas — could you clarify which area this belongs to? Your active areas are: ${activeAreas.map(a => a.name).join(', ')}.`,
+          action: null,
+          updatedData: null,
+        });
+        return;
+      }
+    }
 
     if (action?.type === 'UPDATE_DAILY_LOG' && action.payload) {
       const {
