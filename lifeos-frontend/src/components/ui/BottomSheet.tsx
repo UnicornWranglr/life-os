@@ -45,7 +45,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
         ref={sheetRef}
         className="w-full max-w-app bg-surface border-t border-border rounded-t-2xl
                    px-5 pb-8 pt-4 animate-slide-up"
-        style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
+        style={{ paddingBottom: 'calc(64px + 2rem + env(safe-area-inset-bottom, 0px))' }}
       >
         {/* Drag handle */}
         <div className="mx-auto mb-5 w-10 h-1 rounded-full bg-border" />
