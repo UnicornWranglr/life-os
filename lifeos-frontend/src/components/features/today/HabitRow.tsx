@@ -46,9 +46,9 @@ export function HabitRow({ habit, logs, onToggle }: HabitRowProps) {
   const streak  = calcStreak(habit.id, logs);
   const missed  = missedDaysBefore(habit.id, logs);
 
-  // Nudge state per PRD section 9
-  const nudge2 = missed >= 2 && missed < 3;
-  const nudge3 = missed >= 3;
+  // Nudge state per PRD section 9 — suppressed once ticked today
+  const nudge2 = !done && missed >= 2 && missed < 3;
+  const nudge3 = !done && missed >= 3;
 
   return (
     <div className={`rounded-xl transition-colors ${nudge3 ? 'bg-amber/10 border border-amber/20' : ''}`}>
@@ -86,7 +86,7 @@ export function HabitRow({ habit, logs, onToggle }: HabitRowProps) {
       {/* Inline nudge messages */}
       {nudge3 && (
         <p className="text-xs text-amber px-1 pb-2 -mt-1">
-          Missed 3 days — worth getting back to today
+          Missed {missed} day{missed !== 1 ? 's' : ''} — worth getting back to today
         </p>
       )}
       {nudge2 && !nudge3 && (

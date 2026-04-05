@@ -49,7 +49,14 @@ export function TaskRow({ task, onComplete }: TaskRowProps) {
   return (
     <div className={`flex items-center gap-3 py-2.5 transition-all duration-300
                      ${completing ? 'opacity-0' : 'opacity-100'}`}>
-      {/* Square checkbox */}
+      <div className="flex-1 min-w-0">
+        <p className={`text-sm text-primary leading-tight ${completing ? 'line-through text-muted' : ''}`}>
+          {task.name}
+        </p>
+        <p className="text-xs text-muted mt-0.5">{scheduleLabel(task)}</p>
+      </div>
+
+      {/* Square checkbox — right-aligned */}
       <button
         onClick={() => setCompleting(true)}
         disabled={completing}
@@ -64,13 +71,6 @@ export function TaskRow({ task, onComplete }: TaskRowProps) {
           </svg>
         )}
       </button>
-
-      <div className="flex-1 min-w-0">
-        <p className={`text-sm text-primary leading-tight ${completing ? 'line-through text-muted' : ''}`}>
-          {task.name}
-        </p>
-        <p className="text-xs text-muted mt-0.5">{scheduleLabel(task)}</p>
-      </div>
     </div>
   );
 }

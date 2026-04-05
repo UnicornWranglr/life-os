@@ -28,7 +28,7 @@ export default {
         ],
       },
       maxWidth: {
-        app: '420px',
+        app: '480px',
       },
       height: {
         nav: '64px',
