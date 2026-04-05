@@ -4,6 +4,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { db } from '../db';
 import {
   dailyLogs, areas, quarterlyRocks, monthlyIntentions, habits, habitLogs,
+  sessions, projectItems,
 } from '../db/schema';
 import { authenticate, AuthRequest } from '../middleware/auth';
 
@@ -105,11 +106,29 @@ When responding, always reply in this exact JSON format:
   "action": <null OR a structured action object>
 }
 
-Available action types:
-- { "type": "UPDATE_DAILY_LOG", "payload": { "tomorrowOneThing": "...", "wakeTime": "HH:MM:SS", "sleepTarget": "HH:MM:SS", "cookedDinner": true/false, "workBlockDone": true/false } }
-  Use when the user asks to update or set something in their daily log. Only include the fields they want to change.
+## Available action types
 
-Only include an action if the user is explicitly asking to update data. Otherwise set action to null.
+**UPDATE_DAILY_LOG** — update fields on today's daily log.
+{ "type": "UPDATE_DAILY_LOG", "payload": { "tomorrowOneThing": "...", "wakeTime": "HH:MM:SS", "sleepTarget": "HH:MM:SS", "cookedDinner": true/false, "workBlockDone": true/false } }
+Use when the user asks to update or set something in their daily log. Only include the fields they want to change.
+
+**LOG_SESSION** — record a work session the user just completed or is describing.
+{ "type": "LOG_SESSION", "payload": { "areaId": "<uuid>", "plannedOutcome": "...", "actualOutcome": "...", "completed": "yes"|"partial"|"no", "energyOut": 1-5, "durationMins": 60 } }
+Use proactively when the user describes work they've done — e.g. "I just finished a 90-minute coding session" or "I worked on X for an hour". Match the area by name from the active areas list above. plannedOutcome and actualOutcome can be the same if only one is mentioned. completed is "yes" unless they say it was partial or they ran out of time.
+
+**CREATE_PROJECT_ITEM** — add a next action, decision, or note to an area's project board.
+{ "type": "CREATE_PROJECT_ITEM", "payload": { "areaId": "<uuid>", "title": "...", "type": "action"|"decision"|"note", "status": "next"|"in_progress"|"blocked"|"done", "notes": "..." } }
+Use proactively when the user mentions a task, next step, or thing they want to track — e.g. "I need to email the accountant" or "remind me to review the contract". Default type to "action" and status to "next" unless context suggests otherwise. notes is optional.
+
+**CREATE_ROCK** — add a new quarterly rock (major goal) for an area.
+{ "type": "CREATE_ROCK", "payload": { "areaId": "<uuid>", "quarter": "${quarter}", "title": "...", "status": "on_track"|"at_risk"|"done" } }
+Use when the user describes a significant goal they want to commit to this quarter — e.g. "I want to make launching the app a goal this quarter". Default status to "on_track".
+
+## Action selection rules
+- Use an action whenever the user's message naturally calls for it — don't wait to be explicitly asked.
+- Only emit ONE action per response. If multiple things could be logged, pick the most important one and mention the others in your reply.
+- Always resolve area names to their UUID from the active areas list. If the area is ambiguous, pick the best match and note it in your reply.
+- Set action to null for purely conversational messages, questions, or advice.
 Keep your reply focused, warm, and under 200 words unless more detail is genuinely needed.`;
 
     // ── Call Claude ────────────────────────────────────────────────────────
@@ -178,6 +197,82 @@ Keep your reply focused, warm, and under 200 words unless more detail is genuine
           updatedData = { dailyLog: created };
         }
       }
+    }
+
+    if (action?.type === 'LOG_SESSION' && action.payload) {
+      const {
+        areaId, plannedOutcome, actualOutcome, completed, energyOut, durationMins,
+      } = action.payload as {
+        areaId: string;
+        plannedOutcome?: string;
+        actualOutcome?: string;
+        completed?: 'yes' | 'partial' | 'no';
+        energyOut?: number;
+        durationMins?: number;
+      };
+
+      const [created] = await db
+        .insert(sessions)
+        .values({
+          userId,
+          areaId,
+          sessionDate: today,
+          plannedOutcome,
+          actualOutcome,
+          completed,
+          energyOut,
+          durationMins,
+        })
+        .returning();
+      updatedData = { session: created };
+    }
+
+    if (action?.type === 'CREATE_PROJECT_ITEM' && action.payload) {
+      const {
+        areaId, title, type, status, notes,
+      } = action.payload as {
+        areaId: string;
+        title: string;
+        type?: 'action' | 'decision' | 'note';
+        status?: 'next' | 'in_progress' | 'blocked' | 'done';
+        notes?: string;
+      };
+
+      const [created] = await db
+        .insert(projectItems)
+        .values({
+          userId,
+          areaId,
+          title,
+          type:   type   ?? 'action',
+          status: status ?? 'next',
+          notes,
+        })
+        .returning();
+      updatedData = { projectItem: created };
+    }
+
+    if (action?.type === 'CREATE_ROCK' && action.payload) {
+      const {
+        areaId, quarter: rockQuarter, title, status,
+      } = action.payload as {
+        areaId: string;
+        quarter: string;
+        title: string;
+        status?: 'on_track' | 'at_risk' | 'done';
+      };
+
+      const [created] = await db
+        .insert(quarterlyRocks)
+        .values({
+          userId,
+          areaId,
+          quarter: rockQuarter ?? quarter,
+          title,
+          status: status ?? 'on_track',
+        })
+        .returning();
+      updatedData = { rock: created };
     }
 
     res.json({ reply, action, updatedData });
