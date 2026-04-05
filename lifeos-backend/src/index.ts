@@ -19,6 +19,7 @@ import lifeTasksRouter    from './routes/lifeTasks';
 import weeklyReviewsRouter from './routes/weeklyReviews';
 import projectItemsRouter from './routes/projectItems';
 import insightsRouter     from './routes/insights';
+import chatRouter         from './routes/chat';
 
 const app  = express();
 const PORT = parseInt(process.env.PORT ?? '3001', 10);
@@ -48,6 +49,7 @@ app.use('/api/life-tasks',    lifeTasksRouter);
 app.use('/api/reviews',       weeklyReviewsRouter);
 app.use('/api/project-items', projectItemsRouter);
 app.use('/api/insights',      insightsRouter);
+app.use('/api/chat',          chatRouter);
 
 // ── Error handler (must be last) ───────────────────────────────────────────
 app.use(errorHandler);

@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/ui/ProtectedRoute';
 import { BottomNav } from '@/components/ui/BottomNav';
+import { ChatDrawer } from '@/components/ui/ChatDrawer';
 import { Login } from '@/pages/Login';
 import { Today } from '@/pages/Today';
 import { Areas } from '@/pages/Areas';
@@ -16,6 +17,7 @@ function AuthLayout() {
     <>
       <ProtectedRoute />
       <BottomNav />
+      <ChatDrawer />
     </>
   );
 }

@@ -22,7 +22,6 @@ async function seed() {
 
   if (!user) {
     console.log('User already exists — skipping seed (run only once).');
-    await pool.end();
     return;
   }
 
