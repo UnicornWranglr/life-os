@@ -5,6 +5,7 @@ import { useRecentSessions } from '@/hooks/useSessions';
 import { useAllProjectItems } from '@/hooks/useProjectItems';
 import { getMomentum } from '@/utils/momentum';
 import { AreaCockpitCard } from '@/components/features/areas/AreaCockpitCard';
+import { RecentActivityCard } from '@/components/features/areas/RecentActivityCard';
 import type { ProjectItem } from '@/types';
 
 export function Areas() {
@@ -51,7 +52,7 @@ export function Areas() {
       )}
 
       {areas.filter(a => a.status === 'paused').length > 0 && (
-        <div className="mt-8">
+        <div className="mt-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted mb-3">Paused</p>
           <div className="flex flex-col gap-2">
             {areas.filter(a => a.status === 'paused').map(area => (
@@ -66,6 +67,11 @@ export function Areas() {
           </div>
         </div>
       )}
+
+      {/* Recent activity — last 14 days across all areas */}
+      <div className="mt-6">
+        <RecentActivityCard />
+      </div>
     </div>
   );
 }

@@ -3,13 +3,30 @@ import { sessionsApi } from '@/api/sessions';
 import { daysBeforeToday, todayString } from '@/utils/dates';
 import type { Session } from '@/types';
 
-// Recent sessions (last 30 days) — used by MomentumCard
+// Recent sessions (last 30 days, all areas) — used by MomentumCard and FocusCard
 export function useRecentSessions() {
   const from = daysBeforeToday(30);
   const to   = todayString();
   return useQuery({
     queryKey: ['sessions', { from, to }],
     queryFn: () => sessionsApi.list({ from, to }),
+  });
+}
+
+// All sessions for one area — used by SessionHistoryCard in AreaDetail
+export function useAreaSessions(areaId: string) {
+  return useQuery({
+    queryKey: ['sessions', { areaId }],
+    queryFn: () => sessionsApi.list({ areaId }),
+    enabled: !!areaId,
+  });
+}
+
+// Last 14 days across all areas — used by RecentActivityCard in Areas cockpit
+export function useRecentActivity() {
+  return useQuery({
+    queryKey: ['sessions', 'recent'],
+    queryFn: sessionsApi.recent,
   });
 }
 
@@ -20,7 +37,7 @@ export function useLogSession() {
     mutationFn: (data: Omit<Session, 'id' | 'userId' | 'createdAt'>) =>
       sessionsApi.create(data),
     onSuccess: () => {
-      // Invalidate both the recent sessions cache and areas (momentum recomputes)
+      // Invalidate all session queries so history + momentum + recent activity all refresh
       qc.invalidateQueries({ queryKey: ['sessions'] });
     },
   });

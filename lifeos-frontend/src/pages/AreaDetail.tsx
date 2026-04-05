@@ -9,6 +9,7 @@ import { useProjectItems } from '@/hooks/useProjectItems';
 import { getMomentum } from '@/utils/momentum';
 import { BoardSection } from '@/components/features/areas/BoardSection';
 import { AddItemSheet } from '@/components/features/areas/AddItemSheet';
+import { SessionHistoryCard } from '@/components/features/areas/SessionHistoryCard';
 import { LogSessionSheet } from '@/components/features/today/LogSessionSheet';
 import type { ProjectItem, ProjectItemStatus, ProjectItemType } from '@/types';
 
@@ -151,6 +152,9 @@ export function AreaDetail() {
             onAdd={() => openAdd('note', 'next')}
             emptyText="No notes yet"
           />
+
+          {/* Session history — last 10 sessions for this area */}
+          <SessionHistoryCard areaId={area.id} />
         </div>
       )}
 
