@@ -4,6 +4,7 @@ import { BottomNav } from '@/components/ui/BottomNav';
 import { Login } from '@/pages/Login';
 import { Today } from '@/pages/Today';
 import { Areas } from '@/pages/Areas';
+import { AreaDetail } from '@/pages/AreaDetail';
 import { Review } from '@/pages/Review';
 import { Insights } from '@/pages/Insights';
 import { Me } from '@/pages/Me';
@@ -26,7 +27,8 @@ export function App() {
       <Route element={<AuthLayout />}>
         <Route index element={<Navigate to="/today" replace />} />
         <Route path="today"    element={<Today />} />
-        <Route path="areas"    element={<Areas />} />
+        <Route path="areas"           element={<Areas />} />
+        <Route path="areas/:areaId"  element={<AreaDetail />} />
         <Route path="review"   element={<Review />} />
         <Route path="insights" element={<Insights />} />
         <Route path="me"       element={<Me />} />
