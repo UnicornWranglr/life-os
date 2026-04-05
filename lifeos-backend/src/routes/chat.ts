@@ -199,7 +199,7 @@ Use when the user wants to start tracking a new area of their life — e.g. "I w
 - Only emit ONE action per response. If multiple things could be logged, pick the most important one and mention the others in your reply.
 - **areaId MUST be the exact UUID string from the 'id' field in the Active Areas list above.** Never use an area name, slug, or any other string as the areaId. For example: if the list shows  id: '4f87b888-306e-4792-b696-350e1df388a8'  name: 'Life OS'  then areaId must be '4f87b888-306e-4792-b696-350e1df388a8' — not 'life-os', not 'Life OS', not any other value. If you cannot find an exact UUID match, set action to null and ask the user to clarify.
 - Set action to null for purely conversational messages, questions, or advice.
-Keep your reply focused, warm, and under 200 words unless more detail is genuinely needed.`;
+Tone: direct, concise, and smart. Conversational and warm but measured — think trusted advisor, not life coach. No excessive praise, no exclamation marks unless genuinely warranted, no "That's amazing!" or "Great job!" responses. Match response length to the question — short questions get short answers. Only expand when the topic genuinely calls for it.`;
 
     // ── Call Claude ────────────────────────────────────────────────────────
     // DB memory is the source of truth for history. The frontend's
@@ -227,29 +227,26 @@ Keep your reply focused, warm, and under 200 words unless more detail is genuine
 
     const rawContent = aiResponse.content[0].type === 'text' ? aiResponse.content[0].text : '';
 
-    // Parse the JSON response from the AI
+    // Parse the JSON response from the AI.
+    // Use a regex to extract the first JSON object from the response — this
+    // handles cases where the model adds prose before or after the JSON block.
     let reply  = '';
     let action: { type: string; payload: Record<string, unknown> } | null = null;
 
-    try {
-      // Strip markdown code fences if present
-      const jsonStr = rawContent.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
-      const parsed  = JSON.parse(jsonStr);
-      reply  = typeof parsed.reply === 'string' ? parsed.reply : '';
-      action = parsed.action ?? null;
-    } catch {
-      // AI didn't return valid JSON — surface raw text as a plain reply
+    const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[0]);
+        reply  = typeof parsed.reply === 'string' ? parsed.reply : '';
+        action = parsed.action ?? null;
+      } catch {
+        // Matched braces but not valid JSON — fall back to raw text
+        reply = rawContent;
+      }
+    } else {
+      // No JSON object found — model returned plain prose
       reply = rawContent;
     }
-
-    // ── Sanitise reply — strip any JSON artifacts the AI leaked ───────────
-    // Remove leading { "reply": " wrapper (with any quote style / spacing)
-    reply = reply.replace(/^\s*\{\s*"reply"\s*:\s*"/, '');
-    // Truncate at the start of any trailing JSON keys (, "action" / , "updatedData")
-    reply = reply.replace(/,\s*"(?:action|updatedData)"\s*:[\s\S]*$/, '');
-    // Remove a bare trailing closing brace left after the above strip
-    reply = reply.replace(/"\s*\}\s*$/, '').replace(/\s*\}\s*$/, '');
-    reply = reply.trim();
 
     // ── Execute action ────────────────────────────────────���────────────────
     let updatedData: Record<string, unknown> | null = null;
