@@ -1,38 +1,71 @@
-// Review — Phase 2 scaffold. Full weekly review form in Phase 6.
+// Review — weekly review page.
+// Opens form if no review for current week. Shows completed view if one exists (with Edit button).
+// Past reviews listed below.
 
-function getMondayLabel(): string {
-  const d = new Date();
-  const dow = d.getDay();
-  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
-  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
-}
+import { useState } from 'react';
+import { useAllReviews } from '@/hooks/useReviews';
+import { useWeekSessions } from '@/hooks/useSessions';
+import { useWeekLogs } from '@/hooks/useDailyLogs';
+import { useAreas } from '@/hooks/useAreas';
+import { useCurrentRocks } from '@/hooks/useRocks';
+import { getMondayOf, getCurrentWeekDates, weekEndOf, weekLabel } from '@/utils/dates';
+import { ReviewForm } from '@/components/features/review/ReviewForm';
+import { CompletedReview } from '@/components/features/review/CompletedReview';
+import { ReviewHistory } from '@/components/features/review/ReviewHistory';
 
 export function Review() {
+  const weekStart  = getMondayOf();
+  const weekEnd    = weekEndOf(weekStart);
+  const weekDates  = getCurrentWeekDates();
+
+  const { data: allReviews = [], isLoading: reviewsLoading } = useAllReviews();
+  const { data: sessions   = []                             } = useWeekSessions(weekStart, weekEnd);
+  const { data: logMap     = {}                             } = useWeekLogs();
+  const { data: areas      = []                             } = useAreas();
+  const { data: rocks      = []                             } = useCurrentRocks();
+
+  const [editing, setEditing] = useState(false);
+
+  const currentReview = allReviews.find(r => r.weekStart === weekStart) ?? null;
+  const pastReviews   = allReviews.filter(r => r.weekStart !== weekStart);
+
+  const showForm = !currentReview || editing;
+
   return (
     <div className="page">
       <h1 className="text-[26px] font-semibold tracking-tight text-primary mb-0.5">Review</h1>
-      <p className="text-sm text-muted mb-9">Week of {getMondayLabel()}</p>
+      <p className="text-sm text-muted mb-6">Week of {weekLabel(weekStart)}</p>
 
-      <div className="flex flex-col gap-4">
-        {[
-          'Area momentum',
-          'Focus allocation',
-          'Routine pattern',
-          'Wins this week',
-          'What got in the way',
-          "Next week's priority area",
-          'Rock progress',
-        ].map(section => (
-          <div key={section} className="bg-surface border border-border rounded-2xl p-5">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted mb-3">{section}</p>
-            <div className="h-8 bg-surface2 rounded-lg animate-pulse" />
-          </div>
-        ))}
-      </div>
+      {reviewsLoading ? (
+        <div className="flex flex-col gap-3">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-20 bg-surface border border-border rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      ) : showForm ? (
+        <ReviewForm
+          weekStart={weekStart}
+          sessions={sessions}
+          logMap={logMap}
+          areas={areas}
+          rocks={rocks}
+          weekDates={weekDates}
+          initialValues={currentReview}
+          onSaved={() => setEditing(false)}
+        />
+      ) : (
+        <CompletedReview
+          review={currentReview}
+          sessions={sessions}
+          logMap={logMap}
+          areas={areas}
+          rocks={rocks}
+          weekDates={weekDates}
+          onEdit={() => setEditing(true)}
+        />
+      )}
 
-      <p className="mt-8 text-xs text-muted text-center opacity-50">
-        Full review form in Phase 6
-      </p>
+      <ReviewHistory reviews={pastReviews} areas={areas} />
     </div>
   );
 }

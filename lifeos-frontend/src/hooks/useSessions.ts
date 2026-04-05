@@ -13,6 +13,15 @@ export function useRecentSessions() {
   });
 }
 
+// Sessions for a specific Mon–Sun week — used by the weekly review
+export function useWeekSessions(monday: string, sunday: string) {
+  return useQuery({
+    queryKey: ['sessions', { from: monday, to: sunday }],
+    queryFn: () => sessionsApi.list({ from: monday, to: sunday }),
+    enabled: !!(monday && sunday),
+  });
+}
+
 // All sessions for one area — used by SessionHistoryCard in AreaDetail
 export function useAreaSessions(areaId: string) {
   return useQuery({

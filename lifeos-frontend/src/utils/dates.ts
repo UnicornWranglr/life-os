@@ -65,3 +65,23 @@ export function daysBeforeToday(n: number): string {
   d.setDate(d.getDate() - n);
   return localDateString(d);
 }
+
+// Returns the Sunday (end) of the week that starts on `monday` (YYYY-MM-DD)
+export function weekEndOf(monday: string): string {
+  const d = new Date(monday + 'T12:00');
+  d.setDate(d.getDate() + 6);
+  return localDateString(d);
+}
+
+// Returns current quarter string e.g. "2026-Q2"
+export function currentQuarter(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-Q${Math.floor(now.getMonth() / 3) + 1}`;
+}
+
+// "2026-03-31" → "Mon Mar 31" style week label
+export function weekLabel(monday: string): string {
+  return new Date(monday + 'T12:00').toLocaleDateString('en-US', {
+    month: 'short', day: 'numeric',
+  });
+}
