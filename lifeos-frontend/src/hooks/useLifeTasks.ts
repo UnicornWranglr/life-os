@@ -1,9 +1,43 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { lifeTasksApi } from '@/api/lifeTasks';
 import { todayString } from '@/utils/dates';
-import type { TodayTasks } from '@/types';
+import type { LifeTask, TodayTasks } from '@/types';
 
 const TODAY_KEY = ['life-tasks', 'today'] as const;
+
+// All task definitions — for config page
+export function useAllLifeTasks() {
+  return useQuery({
+    queryKey: ['life-tasks'],
+    queryFn: lifeTasksApi.list,
+  });
+}
+
+export function useAddLifeTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Pick<LifeTask, 'name' | 'category' | 'scheduleType' | 'scheduleConfig' | 'scope'>) =>
+      lifeTasksApi.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['life-tasks'] }),
+  });
+}
+
+export function useToggleLifeTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) =>
+      lifeTasksApi.setActive(id, active),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['life-tasks'] }),
+  });
+}
+
+export function useDeleteLifeTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => lifeTasksApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['life-tasks'] }),
+  });
+}
 
 // Today's task list — refetches on window focus (PRD 6.3)
 export function useTodayTasks() {

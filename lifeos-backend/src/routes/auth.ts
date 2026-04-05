@@ -69,6 +69,61 @@ router.post('/refresh', async (req, res, next) => {
   }
 });
 
+// PUT /api/auth/email  — change email (requires current password)
+router.put('/email', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      res.status(400).json({ error: 'email and password are required' });
+      return;
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.id, req.userId!));
+    if (!user) { res.status(404).json({ error: 'User not found' }); return; }
+
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) { res.status(401).json({ error: 'Incorrect password' }); return; }
+
+    const [updated] = await db
+      .update(users)
+      .set({ email })
+      .where(eq(users.id, req.userId!))
+      .returning({ id: users.id, email: users.email });
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /api/auth/password  — change password (requires current password)
+router.put('/password', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      res.status(400).json({ error: 'currentPassword and newPassword are required' });
+      return;
+    }
+    if (newPassword.length < 8) {
+      res.status(400).json({ error: 'New password must be at least 8 characters' });
+      return;
+    }
+
+    const [user] = await db.select().from(users).where(eq(users.id, req.userId!));
+    if (!user) { res.status(404).json({ error: 'User not found' }); return; }
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) { res.status(401).json({ error: 'Incorrect current password' }); return; }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await db.update(users).set({ passwordHash }).where(eq(users.id, req.userId!));
+
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/auth/me
 router.get('/me', authenticate, async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {

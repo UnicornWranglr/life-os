@@ -2,11 +2,28 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { habitsApi } from '@/api/habits';
 import { todayString, daysBeforeToday } from '@/utils/dates';
 
-// Fetch all active habit definitions
+// Fetch all habit definitions (active + inactive) — used for config
 export function useHabits() {
   return useQuery({
     queryKey: ['habits'],
     queryFn: habitsApi.list,
+  });
+}
+
+export function useAddHabit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name: string; areaId?: string }) => habitsApi.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['habits'] }),
+  });
+}
+
+export function useUpdateHabit() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string; name?: string; areaId?: string; active?: boolean }) =>
+      habitsApi.update(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['habits'] }),
   });
 }
 
