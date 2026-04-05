@@ -3,14 +3,17 @@
 
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAreas } from '@/hooks/useAreas';
 import { useRecentSessions } from '@/hooks/useSessions';
 import { useProjectItems } from '@/hooks/useProjectItems';
 import { getMomentum } from '@/utils/momentum';
 import { BoardSection } from '@/components/features/areas/BoardSection';
 import { AddItemSheet } from '@/components/features/areas/AddItemSheet';
+import { AreaFormSheet } from '@/components/features/areas/AreaFormSheet';
 import { SessionHistoryCard } from '@/components/features/areas/SessionHistoryCard';
 import { LogSessionSheet } from '@/components/features/today/LogSessionSheet';
+import { areasApi } from '@/api/areas';
 import type { ProjectItem, ProjectItemStatus, ProjectItemType } from '@/types';
 
 // Returns the start of the current calendar quarter as a Date
@@ -35,8 +38,11 @@ export function AreaDetail() {
   const { data: sessions = [] } = useRecentSessions();
   const { data: items    = [], isLoading } = useProjectItems(areaId ?? '');
 
-  const [addCtx,       setAddCtx]       = useState<AddContext | null>(null);
-  const [logOpen,      setLogOpen]      = useState(false);
+  const [addCtx,    setAddCtx]    = useState<AddContext | null>(null);
+  const [logOpen,   setLogOpen]   = useState(false);
+  const [editOpen,  setEditOpen]  = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const qc = useQueryClient();
 
   const area = areas.find(a => a.id === areaId);
 
@@ -59,6 +65,18 @@ export function AreaDetail() {
 
   function openAdd(defaultType: ProjectItemType, defaultStatus: ProjectItemStatus) {
     setAddCtx({ defaultType, defaultStatus });
+  }
+
+  async function handleArchive() {
+    if (!area) return;
+    setArchiving(true);
+    try {
+      await areasApi.archive(area.id);
+      qc.invalidateQueries({ queryKey: ['areas'] });
+      navigate('/areas');
+    } finally {
+      setArchiving(false);
+    }
   }
 
   return (
@@ -100,6 +118,23 @@ export function AreaDetail() {
           >
             Log session
           </button>
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => setEditOpen(true)}
+              className="text-xs font-medium text-muted bg-surface2 border border-border
+                         px-3 py-1 rounded-lg active:opacity-70 transition-opacity"
+            >
+              Edit
+            </button>
+            <button
+              onClick={handleArchive}
+              disabled={archiving}
+              className="text-xs font-medium text-red/70 bg-red/5 border border-red/15
+                         px-3 py-1 rounded-lg active:opacity-70 transition-opacity disabled:opacity-40"
+            >
+              {archiving ? '…' : 'Archive'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -174,6 +209,13 @@ export function AreaDetail() {
         area={area}
         open={logOpen}
         onClose={() => setLogOpen(false)}
+      />
+
+      {/* Edit area sheet */}
+      <AreaFormSheet
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        area={area}
       />
     </div>
   );

@@ -82,11 +82,12 @@ export function AreaCockpitCard({ area, momentum, nextAction, onEdit, onArchive 
 
       {/* Edit / Archive actions */}
       {(onEdit || onArchive) && (
-        <div className="flex gap-3 mt-3 ml-[22px]">
+        <div className="flex gap-2 mt-3 pt-3 border-t border-border/50 ml-[22px]">
           {onEdit && (
             <button
               onClick={onEdit}
-              className="text-xs text-muted hover:text-primary active:opacity-70 transition-colors"
+              className="text-xs font-medium text-muted bg-surface2 border border-border
+                         px-3 py-1 rounded-lg active:opacity-70 transition-opacity"
             >
               Edit
             </button>
@@ -94,7 +95,8 @@ export function AreaCockpitCard({ area, momentum, nextAction, onEdit, onArchive 
           {onArchive && (
             <button
               onClick={onArchive}
-              className="text-xs text-muted hover:text-red active:opacity-70 transition-colors"
+              className="text-xs font-medium text-red/70 bg-red/5 border border-red/15
+                         px-3 py-1 rounded-lg active:opacity-70 transition-opacity"
             >
               Archive
             </button>
