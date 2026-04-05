@@ -1,6 +1,6 @@
 // Areas cockpit — list of all active areas with momentum, focus budget, and next action.
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAreas } from '@/hooks/useAreas';
 import { useRecentSessions } from '@/hooks/useSessions';
@@ -10,9 +10,10 @@ import { AreaCockpitCard } from '@/components/features/areas/AreaCockpitCard';
 import { RecentActivityCard } from '@/components/features/areas/RecentActivityCard';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { areasApi } from '@/api/areas';
-import type { AreaType, ProjectItem } from '@/types';
+import type { Area, AreaType, ProjectItem } from '@/types';
 
-// ── Preset colour swatches ─────────────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────────────────────
+
 const COLOR_PRESETS = [
   '#1D9E75', '#17A37A', '#378ADD', '#7F77DD',
   '#D85A30', '#BA7517', '#E24B4A', '#888888',
@@ -30,14 +31,15 @@ const inputCls =
   'w-full bg-surface2 border border-border rounded-xl px-3 py-2.5 text-sm ' +
   'text-primary placeholder:text-muted/40 outline-none focus:border-accent transition-colors';
 
-// ── AddAreaSheet ───────────────────────────────────────────────────────────
+// ── AreaFormSheet — handles both create and edit ───────────────────────────
 
-interface AddAreaSheetProps {
-  open: boolean;
+interface AreaFormSheetProps {
+  open:    boolean;
   onClose: () => void;
+  area?:   Area;          // when provided: edit mode
 }
 
-function AddAreaSheet({ open, onClose }: AddAreaSheetProps) {
+function AreaFormSheet({ open, onClose, area }: AreaFormSheetProps) {
   const qc = useQueryClient();
 
   const [name,           setName]           = useState('');
@@ -48,19 +50,34 @@ function AddAreaSheet({ open, onClose }: AddAreaSheetProps) {
   const [saving,         setSaving]         = useState(false);
   const [error,          setError]          = useState('');
 
-  function reset() {
-    setName(''); setType('project'); setFocusBudgetPct(10);
-    setColor(COLOR_PRESETS[0]); setWeekdaysOnly(false);
+  // Sync form fields whenever the sheet opens or the target area changes.
+  useEffect(() => {
+    if (!open) return;
+    if (area) {
+      setName(area.name);
+      setType(area.type);
+      setFocusBudgetPct(area.focusBudgetPct);
+      setColor(area.color);
+      setWeekdaysOnly(area.weekdaysOnly);
+    } else {
+      setName(''); setType('project'); setFocusBudgetPct(10);
+      setColor(COLOR_PRESETS[0]); setWeekdaysOnly(false);
+    }
     setError('');
-  }
+  }, [open, area]);
 
-  function handleClose() { reset(); onClose(); }
+  function handleClose() { setError(''); onClose(); }
 
   async function handleSave() {
     if (!name.trim()) { setError('Name is required'); return; }
     setSaving(true); setError('');
     try {
-      await areasApi.create({ name: name.trim(), type, focusBudgetPct, color, weekdaysOnly });
+      const payload = { name: name.trim(), type, focusBudgetPct, color, weekdaysOnly };
+      if (area) {
+        await areasApi.update(area.id, payload);
+      } else {
+        await areasApi.create(payload);
+      }
       qc.invalidateQueries({ queryKey: ['areas'] });
       handleClose();
     } catch {
@@ -70,11 +87,12 @@ function AddAreaSheet({ open, onClose }: AddAreaSheetProps) {
     }
   }
 
+  const isEdit = !!area;
+
   return (
-    <BottomSheet open={open} onClose={handleClose} title="New area">
+    <BottomSheet open={open} onClose={handleClose} title={isEdit ? 'Edit area' : 'New area'}>
       <div className="flex flex-col gap-3">
 
-        {/* Name */}
         <input
           value={name}
           onChange={e => { setName(e.target.value); setError(''); }}
@@ -83,7 +101,6 @@ function AddAreaSheet({ open, onClose }: AddAreaSheetProps) {
           autoFocus
         />
 
-        {/* Type */}
         <select
           value={type}
           onChange={e => setType(e.target.value as AreaType)}
@@ -94,11 +111,8 @@ function AddAreaSheet({ open, onClose }: AddAreaSheetProps) {
           ))}
         </select>
 
-        {/* Focus budget */}
         <div className="flex items-center gap-3">
-          <label className="text-xs text-muted w-28 flex-shrink-0">
-            Focus budget
-          </label>
+          <label className="text-xs text-muted w-28 flex-shrink-0">Focus budget</label>
           <input
             type="number"
             min={0}
@@ -110,7 +124,6 @@ function AddAreaSheet({ open, onClose }: AddAreaSheetProps) {
           <span className="text-sm text-muted flex-shrink-0">%</span>
         </div>
 
-        {/* Colour swatches */}
         <div>
           <p className="text-xs text-muted mb-2">Colour</p>
           <div className="flex flex-wrap gap-2">
@@ -129,7 +142,6 @@ function AddAreaSheet({ open, onClose }: AddAreaSheetProps) {
           </div>
         </div>
 
-        {/* Weekdays only */}
         <label className="flex items-center gap-3 cursor-pointer py-1">
           <div
             onClick={() => setWeekdaysOnly(v => !v)}
@@ -150,7 +162,7 @@ function AddAreaSheet({ open, onClose }: AddAreaSheetProps) {
           className="w-full bg-accent text-white text-sm font-semibold rounded-xl py-3
                      transition-opacity disabled:opacity-50 mt-1"
         >
-          {saving ? 'Saving…' : 'Add area'}
+          {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Add area'}
         </button>
       </div>
     </BottomSheet>
@@ -163,17 +175,32 @@ export function Areas() {
   const { data: areas    = [], isLoading: areasLoading    } = useAreas();
   const { data: sessions = [], isLoading: sessionsLoading } = useRecentSessions();
   const { data: items    = [], isLoading: itemsLoading    } = useAllProjectItems();
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const qc = useQueryClient();
+
+  const [formOpen,     setFormOpen]     = useState(false);
+  const [editingArea,  setEditingArea]  = useState<Area | undefined>(undefined);
+  const [archiving,    setArchiving]    = useState<string | null>(null); // areaId being archived
 
   const isLoading = areasLoading || sessionsLoading || itemsLoading;
+  const active    = areas.filter(a => a.status === 'active');
 
-  const active = areas.filter(a => a.status === 'active');
-
-  // Build a map: areaId → first next action
   const nextActionMap = new Map<string, ProjectItem>();
   for (const item of items) {
     if (item.type === 'action' && item.status === 'next' && !nextActionMap.has(item.areaId)) {
       nextActionMap.set(item.areaId, item);
+    }
+  }
+
+  function openAdd()         { setEditingArea(undefined); setFormOpen(true); }
+  function openEdit(a: Area) { setEditingArea(a);         setFormOpen(true); }
+
+  async function handleArchive(id: string) {
+    setArchiving(id);
+    try {
+      await areasApi.archive(id);
+      qc.invalidateQueries({ queryKey: ['areas'] });
+    } finally {
+      setArchiving(null);
     }
   }
 
@@ -185,7 +212,7 @@ export function Areas() {
           <p className="text-sm text-muted">Your active focus areas</p>
         </div>
         <button
-          onClick={() => setSheetOpen(true)}
+          onClick={openAdd}
           className="flex items-center gap-1.5 text-xs font-medium text-accent-light
                      bg-accent/10 border border-accent/20 px-3 py-1.5 rounded-full
                      active:opacity-70 transition-opacity mt-1"
@@ -211,6 +238,8 @@ export function Areas() {
               area={area}
               momentum={getMomentum(area, sessions)}
               nextAction={nextActionMap.get(area.id)}
+              onEdit={() => openEdit(area)}
+              onArchive={archiving === area.id ? undefined : () => handleArchive(area.id)}
             />
           ))}
         </div>
@@ -223,22 +252,33 @@ export function Areas() {
             {areas.filter(a => a.status === 'paused').map(area => (
               <div key={area.id}
                    className="bg-surface border border-border rounded-2xl px-4 py-3
-                              flex items-center gap-2.5 opacity-50">
-                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                     style={{ background: area.color }} />
-                <p className="text-sm text-muted">{area.name}</p>
+                              flex items-center justify-between gap-2.5 opacity-60">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                       style={{ background: area.color }} />
+                  <p className="text-sm text-muted truncate">{area.name}</p>
+                </div>
+                <button
+                  onClick={() => openEdit(area)}
+                  className="text-xs text-muted active:opacity-70 flex-shrink-0"
+                >
+                  Edit
+                </button>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Recent activity — last 14 days across all areas */}
       <div className="mt-6">
         <RecentActivityCard />
       </div>
 
-      <AddAreaSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
+      <AreaFormSheet
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        area={editingArea}
+      />
     </div>
   );
 }

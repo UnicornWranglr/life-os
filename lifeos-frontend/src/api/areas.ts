@@ -13,4 +13,7 @@ export const areasApi = {
 
   updateStatus: (id: string, status: AreaStatus) =>
     client.patch<Area>(`/areas/${id}/status`, { status }).then(r => r.data),
+
+  archive: (id: string) =>
+    client.delete<Area>(`/areas/${id}`).then(r => r.data),
 };

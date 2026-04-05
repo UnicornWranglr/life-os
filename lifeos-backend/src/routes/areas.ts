@@ -58,6 +58,25 @@ router.put('/:id', async (req: AuthRequest, res: Response, next: NextFunction) =
   }
 });
 
+// DELETE /api/areas/:id  — soft delete: set status to archived
+router.delete('/:id', async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const [updated] = await db
+      .update(areas)
+      .set({ status: 'archived' })
+      .where(and(eq(areas.id, req.params.id), eq(areas.userId, req.userId!)))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: 'Area not found' });
+      return;
+    }
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // PATCH /api/areas/:id/status
 router.patch('/:id/status', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
