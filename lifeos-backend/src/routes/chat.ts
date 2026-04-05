@@ -237,7 +237,16 @@ Keep your reply focused, warm, and under 200 words unless more detail is genuine
       // AI didn't return valid JSON — use raw text as reply, no action
     }
 
-    // ── Execute action ─────────────────────────────────────────────────────
+    // ── Sanitise reply — strip any JSON artifacts the AI leaked ───────────
+    // Remove leading { "reply": " wrapper (with any quote style / spacing)
+    reply = reply.replace(/^\s*\{\s*"reply"\s*:\s*"/, '');
+    // Truncate at the start of any trailing JSON keys (, "action" / , "updatedData")
+    reply = reply.replace(/,\s*"(?:action|updatedData)"\s*:[\s\S]*$/, '');
+    // Remove a bare trailing closing brace left after the above strip
+    reply = reply.replace(/"\s*\}\s*$/, '').replace(/\s*\}\s*$/, '');
+    reply = reply.trim();
+
+    // ── Execute action ────────────────────────────────────���────────────────
     let updatedData: Record<string, unknown> | null = null;
 
     // Guard: actions that write to a specific area must use a valid UUID that
