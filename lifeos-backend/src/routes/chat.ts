@@ -190,6 +190,10 @@ Use proactively when the user mentions a task, next step, or thing they want to 
 { "type": "CREATE_ROCK", "payload": { "areaId": "<uuid>", "quarter": "${quarter}", "title": "...", "status": "on_track"|"at_risk"|"done" } }
 Use when the user describes a significant goal they want to commit to this quarter — e.g. "I want to make launching the app a goal this quarter". Default status to "on_track".
 
+**CREATE_AREA** — create a new focus area.
+{ "type": "CREATE_AREA", "payload": { "name": "...", "type": "income_building"|"project"|"obligation"|"vision", "focusBudgetPct": 10, "color": "#hex", "weekdaysOnly": false } }
+Use when the user wants to start tracking a new area of their life — e.g. "I want to add fitness as an area" or "I'm starting a new project I'd like to track". Choose the type that best fits: income_building (generates income), project (time-limited build), obligation (ongoing commitment you didn't choose), vision (long-term aspiration). focusBudgetPct should reflect how much of their discretionary time this deserves (all areas ideally sum to 100). Pick a distinct hex color — avoid colors already used by existing areas above. weekdaysOnly should be true only for work/job obligations.
+
 ## Action selection rules
 - Use an action whenever the user's message naturally calls for it — don't wait to be explicitly asked.
 - Only emit ONE action per response. If multiple things could be logged, pick the most important one and mention the others in your reply.
@@ -376,6 +380,32 @@ Keep your reply focused, warm, and under 200 words unless more detail is genuine
         })
         .returning();
       updatedData = { rock: created };
+    }
+
+    if (action?.type === 'CREATE_AREA' && action.payload) {
+      const {
+        name, type: areaType, focusBudgetPct, color, weekdaysOnly,
+      } = action.payload as {
+        name: string;
+        type: 'income_building' | 'project' | 'obligation' | 'vision';
+        focusBudgetPct?: number;
+        color: string;
+        weekdaysOnly?: boolean;
+      };
+
+      const [created] = await db
+        .insert(areas)
+        .values({
+          userId,
+          name,
+          type:           areaType,
+          focusBudgetPct: focusBudgetPct ?? 10,
+          color,
+          weekdaysOnly:   weekdaysOnly ?? false,
+          status:         'active',
+        })
+        .returning();
+      updatedData = { area: created };
     }
 
     res.json({ reply, action, updatedData });
