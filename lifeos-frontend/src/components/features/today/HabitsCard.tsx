@@ -29,7 +29,7 @@ export function HabitsCard() {
       )}
 
       {!loading && active.length > 0 && (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col divide-y divide-border">
           {active.map(habit => (
             <HabitRow
               key={habit.id}

@@ -60,8 +60,9 @@ export function TaskRow({ task, onComplete }: TaskRowProps) {
       <button
         onClick={() => setCompleting(true)}
         disabled={completing}
-        className="flex-shrink-0 w-6 h-6 rounded-md border-2 border-border flex items-center
+        className="flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center
                    justify-center transition-all duration-200 active:scale-90 hover:border-accent"
+        style={{ borderColor: completing ? '#0F6E56' : '#6b7280' }}
         aria-label={`Complete ${task.name}`}
       >
         {completing && (
